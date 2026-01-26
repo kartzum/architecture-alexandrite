@@ -1,0 +1,30 @@
+@startuml
+title Операция чтения списка заказов и запись об изменении статуса заказа
+
+actor "Оператор" as Operator
+participant "Пользовательский интерфейс" as UI
+participant "API системы" as API
+database "Кэш Redis" as Cache
+database "База данных заказов" as OrdersDB
+
+Operator -> UI: Открыть список заказов (параметры: пользователь, статус, пагинация)
+UI -> API: Запрос списка заказов
+API -> Cache: Получить данные из кэша
+alt Кэш найден
+  Cache --> API: Список заказов
+  API --> UI: 200 OK, список заказов
+else Кэш не найден
+  API -> OrdersDB: Запрос списка заказов
+  OrdersDB --> API: Данные заказов
+  API -> Cache: Сохранить данные в кэш
+  API --> UI: 200 OK, список заказов
+end
+
+Operator -> UI: Изменить статус заказа
+UI -> API: Запрос на изменение статуса заказа
+API -> OrdersDB: Обновить статус заказа
+OrdersDB --> API: OK
+API -> Cache: Инвалидировать кэш
+API --> UI: 200 OK
+
+@enduml
